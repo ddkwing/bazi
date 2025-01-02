@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
-from lunar_python import Solar, Lunar 
+from lunar_python import Solar, Lunar
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app) # 启用CORS支持
 
-@app.route('/bazi', methods=['GET'])
+@app.route('/api/bazi', methods=['GET'])
 def calculate_bazi():
     # 获取参数
     birth_date = request.args.get('birth_date', '')
@@ -53,5 +55,6 @@ def calculate_bazi():
     except ValueError:
         return jsonify({"error": "Invalid date/time values"}), 400
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# 需要这个handler供Vercel调用
+def handler(request, context):
+    return app(request)
