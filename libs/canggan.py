@@ -7,6 +7,15 @@ class CangGanStrength(Enum):
     WEAK = 0.3    # 最弱，三藏最后一个
 
 class CangGan:
+    # 天干五行对应表
+    TIANGAN_WUXING: Dict[str, str] = {
+        "甲": "木", "乙": "木",
+        "丙": "火", "丁": "火",
+        "戊": "土", "己": "土",
+        "庚": "金", "辛": "金",
+        "壬": "水", "癸": "水"
+    }
+    
     # 地支藏干对应表，每个地支对应的天干列表按照力量强弱排序
     DIZHI_CANGGAN: Dict[str, List[str]] = {
         "子": ["癸"],           # 单藏癸水
@@ -30,6 +39,12 @@ class CangGan:
         "午": "丁", "未": "己", "申": "庚",
         "酉": "辛", "戌": "戊", "亥": "壬"
     }
+
+    @staticmethod
+    def get_gan_with_wuxing(gan: str) -> str:
+        """获取带五行的天干名称"""
+        wuxing = CangGan.TIANGAN_WUXING.get(gan, "")
+        return f"{gan}{wuxing}" if wuxing else gan
 
     @staticmethod
     def get_canggan_list(dizhi: str) -> List[str]:
@@ -77,17 +92,19 @@ class CangGan:
         
         for gan, strength in canggan_list:
             details.append({
-                "gan": gan,
+                "gan": CangGan.get_gan_with_wuxing(gan),  # 这里改为返回带五行的天干
                 "strength": strength,
                 "is_jianlu": gan == CangGan.DIZHI_JIANLU.get(dizhi)
             })
         
         return {
             "dizhi": dizhi,
-            "canggan_list": canggan_list,
+            "canggan_list": [(CangGan.get_gan_with_wuxing(gan), strength) 
+                            for gan, strength in canggan_list],  # 这里也改为带五行
             "count": len(canggan_list),
             "has_jianlu": dizhi in CangGan.DIZHI_JIANLU,
-            "jianlu_gan": CangGan.DIZHI_JIANLU.get(dizhi),
+            "jianlu_gan": CangGan.get_gan_with_wuxing(CangGan.DIZHI_JIANLU.get(dizhi)) 
+                         if dizhi in CangGan.DIZHI_JIANLU else None,  # 建禄干也带五行
             "details": details
         }
 
@@ -100,7 +117,7 @@ class BaziPillar:
     def analyze(self) -> Dict[str, any]:
         """分析单柱天干地支与藏干"""
         return {
-            "tiangan": self.tiangan,
+            "tiangan": CangGan.get_gan_with_wuxing(self.tiangan),  # 天干也要带五行
             "dizhi": self.dizhi,
             "canggan_analysis": self.canggan.analyze_pillar_canggan(self.dizhi)
         }

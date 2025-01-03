@@ -17,9 +17,5 @@
       },
       "continue": true
     }
-  ],
-  "public": true,
-  "authentication": {
-    "required": false
-  }
+  ]
 }
