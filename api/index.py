@@ -4,7 +4,7 @@ from lunar_python import Solar
 from typing import Dict, Any
 import json
 
-from libs.canggan import CangGan, BaziPillar
+from libs.bazi_analyzer import BaziHiddenStem, BaziPillar
 
 def parse_birth_date(birth_date: str) -> tuple:
     """解析生日字符串"""
@@ -16,14 +16,26 @@ def parse_birth_date(birth_date: str) -> tuple:
     return year, month, day, hour, minute
 
 class BaziAnalyzer:
-    def __init__(self, ba):
+    def __init__(self, eight_char):
         """初始化八字分析器"""
-        self.ba = ba
+        self.eight_char = eight_char
         # 初始化四柱
-        self.year_pillar = BaziPillar(ba.getYearGan(), ba.getYearZhi())
-        self.month_pillar = BaziPillar(ba.getMonthGan(), ba.getMonthZhi())
-        self.day_pillar = BaziPillar(ba.getDayGan(), ba.getDayZhi())
-        self.hour_pillar = BaziPillar(ba.getTimeGan(), ba.getTimeZhi())
+        self.year_pillar = BaziPillar(
+            eight_char.getYearGan(), 
+            eight_char.getYearZhi()
+        )
+        self.month_pillar = BaziPillar(
+            eight_char.getMonthGan(), 
+            eight_char.getMonthZhi()
+        )
+        self.day_pillar = BaziPillar(
+            eight_char.getDayGan(), 
+            eight_char.getDayZhi()
+        )
+        self.hour_pillar = BaziPillar(
+            eight_char.getTimeGan(), 
+            eight_char.getTimeZhi()
+        )
 
     def analyze(self) -> Dict[str, Any]:
         """进行完整八字分析"""
@@ -64,10 +76,10 @@ class handler(BaseHTTPRequestHandler):
             year, month, day, hour, minute = parse_birth_date(birth_date)
             solar = Solar.fromYmdHms(year, month, day, hour, minute, 0)
             lunar = solar.getLunar()
-            ba = lunar.getEightChar()
+            eight_char = lunar.getEightChar()
             
             # 进行八字分析
-            analyzer = BaziAnalyzer(ba)
+            analyzer = BaziAnalyzer(eight_char)
             analysis = analyzer.analyze()
             
             # 构建响应
