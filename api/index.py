@@ -1,10 +1,9 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 from lunar_python import Solar
-from typing import Dict, Any
 import json
-
-from libs.bazi_analyzer import BaziHiddenStem, BaziPillar
+from libs.chinese_calendar import ChineseCalendar
+from libs.response_handler import format_response
 
 def parse_birth_date(birth_date: str) -> tuple:
     """解析生日字符串"""
@@ -14,39 +13,6 @@ def parse_birth_date(birth_date: str) -> tuple:
     hour = int(birth_date[8:10])
     minute = int(birth_date[10:12])
     return year, month, day, hour, minute
-
-class BaziAnalyzer:
-    def __init__(self, eight_char):
-        """初始化八字分析器"""
-        self.eight_char = eight_char
-        # 初始化四柱
-        self.year_pillar = BaziPillar(
-            eight_char.getYearGan(), 
-            eight_char.getYearZhi()
-        )
-        self.month_pillar = BaziPillar(
-            eight_char.getMonthGan(), 
-            eight_char.getMonthZhi()
-        )
-        self.day_pillar = BaziPillar(
-            eight_char.getDayGan(), 
-            eight_char.getDayZhi()
-        )
-        self.hour_pillar = BaziPillar(
-            eight_char.getTimeGan(), 
-            eight_char.getTimeZhi()
-        )
-
-    def analyze(self) -> Dict[str, Any]:
-        """进行完整八字分析"""
-        return {
-            "pillars": {
-                "year": self.year_pillar.analyze(),
-                "month": self.month_pillar.analyze(),
-                "day": self.day_pillar.analyze(),
-                "hour": self.hour_pillar.analyze()
-            }
-        }
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -65,31 +31,41 @@ class handler(BaseHTTPRequestHandler):
             
             birth_date = query_params.get('birth_date', [''])[0]
             birth_at = query_params.get('birth_at', [''])[0]
+            gender = query_params.get('gender', ['1'])[0]
             
-            # 验证输入
             if not birth_date or len(birth_date) != 12:
                 response = {"error": "Invalid birth_date format. Expected: YYYYMMDDhhmm"}
                 self.wfile.write(json.dumps(response).encode())
                 return
 
-            # 解析日期并创建八字
+            # 生成原始数据
             year, month, day, hour, minute = parse_birth_date(birth_date)
             solar = Solar.fromYmdHms(year, month, day, hour, minute, 0)
             lunar = solar.getLunar()
             eight_char = lunar.getEightChar()
             
-            # 进行八字分析
             analyzer = BaziAnalyzer(eight_char)
-            analysis = analyzer.analyze()
+            lunar_analysis = analyzer.analyze()
             
-            # 构建响应
-            response = {
+            calendar = ChineseCalendar()
+            calendar_analysis = calendar.GetInfo(
+                int(gender),
+                year, month, day,
+                hour, minute, 0
+            )
+            
+            # 构建原始响应
+            raw_response = {
                 "birth_date": birth_date,
                 "birth_at": birth_at,
-                "analysis": analysis
+                "lunar_analysis": lunar_analysis,
+                "calendar_analysis": calendar_analysis
             }
             
-            self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+            # 使用新的响应处理器格式化数据
+            formatted_response = format_response(raw_response)
+            
+            self.wfile.write(json.dumps(formatted_response, ensure_ascii=False).encode('utf-8'))
             
         except Exception as e:
             response = {"error": str(e)}
