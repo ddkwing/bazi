@@ -18,5 +18,8 @@
       "continue": true
     }
   ],
-  "public": true
+  "public": true,
+  "authentication": {
+    "required": false
+  }
 }
